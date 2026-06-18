@@ -1,0 +1,41 @@
+name: Deploy PHP to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Generate Static HTML
+        run: |
+          mkdir dist
+          # Start a temporary PHP background server
+          php -S localhost:8000 &
+          # Wait 2 seconds for the server to start
+          sleep 2 
+          # Use wget to crawl the local PHP server and save it as static HTML
+          wget --mirror --page-requisites --adjust-extension --no-parent --directory-prefix=dist http://localhost:8000/
+          # Move files out of the localhost subdirectory if needed
+          mv dist/localhost:8000/* dist/
+          rm -rf dist/localhost:8000
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
